@@ -1,6 +1,6 @@
-#include <fstream>
 #include <iostream>
-#include <string>
+
+#include "util.h"
 
 using namespace std;
 
@@ -17,13 +17,10 @@ int fuel_requirement(int mass) {
 int main() {
   int sum = 0;
 
-  string line;
-  ifstream inputfile("01.txt");
-  if(inputfile.is_open()) {
-    while(getline(inputfile, line)) {
-      sum += fuel_requirement(stoi(line));
-    }
-    inputfile.close();
+  auto lines = read_file("01.txt");
+
+  for(auto line : lines) {
+    sum += fuel_requirement(stoi(line));
   }
 
   cout << sum << endl;
