@@ -2,6 +2,7 @@
 #define UTIL_H
 
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -18,6 +19,22 @@ vector<string> read_file(string path) {
     inputfile.close();
   }
   return result;
+}
+
+vector<int> split_string_to_ints(string input) {
+  istringstream ss(input);
+
+  vector<int> data;
+
+  while(ss) {
+    string s;
+    if(!getline(ss, s, ',')) {
+      break;
+    }
+    data.push_back(stoi(s));
+  }
+
+  return data;
 }
 
 #endif

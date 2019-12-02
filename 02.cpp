@@ -1,50 +1,51 @@
 #include <iostream>
-#include <sstream>
 
 #include "util.h"
 
 using namespace std;
 
-vector<int> get_data(string input) {
-  istringstream ss(input);
+const bool debug = false;
 
-  vector<int> data;
-
-  while(ss) {
-    string s;
-    if(!getline(ss, s, ',')) {
-      break;
-    }
-    data.push_back(stoi(s));
-  }
-
-  return data;
-}
-
-int main() {
-  auto lines = read_file("02.txt");
-
-  auto data = get_data(lines[0]);
-
+int run_program(vector<int> program) {
   int pc = 0;
 
-  data[1] = 12;
-  data[2] = 2;
-
-  while(data[pc] != 99) {
-    cout << "[PC " << pc << "]" << endl;
-    switch(data[pc]) {
+  while(program[pc] != 99) {
+    if(debug) {
+      cout << "[PC " << pc << "]" << endl;
+    }
+    switch(program[pc]) {
     case 1:
-      cout << "data[" << data[pc+3] << "] = data["<< data[pc+1] << "] + data[" << data[pc+2] << "]" << endl << flush;
-      data[data[pc+3]] = data[data[pc+1]] + data[data[pc+2]];
+      if(debug) {
+	cout << "program[" << program[pc+3] << "] = program["<< program[pc+1] << "] + program[" << program[pc+2] << "]" << endl << flush;
+      }
+      program[program[pc+3]] = program[program[pc+1]] + program[program[pc+2]];
       break;
     case 2:
-      cout << "data[" << data[pc+3] << "] = data["<< data[pc+1] << "] * data[" << data[pc+2] << "]" << endl << flush;
-      data[data[pc+3]] = data[data[pc+1]] * data[data[pc+2]];
+      if(debug) {
+	cout << "program[" << program[pc+3] << "] = program["<< program[pc+1] << "] * program[" << program[pc+2] << "]" << endl << flush;
+      }
+      program[program[pc+3]] = program[program[pc+1]] * program[program[pc+2]];
       break;
     }
     pc += 4;
   }
 
-  cout << data[0] << endl;
+  return program[0];
+}
+
+int main() {
+  auto lines = read_file("02.txt");
+
+  auto program = split_string_to_ints(lines[0]);
+
+  for(int i = 0;i < 99;i++) {
+    for(int j = 0;j < 99;j++) {
+      auto program_copy = program;
+      program_copy[1] = i;
+      program_copy[2] = j;
+      if(run_program(program_copy) == 19690720) {
+	cout << 100 * i + j << endl;
+      }
+    }
+  }
 }
