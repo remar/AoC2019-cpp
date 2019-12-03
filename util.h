@@ -21,16 +21,29 @@ vector<string> read_file(string path) {
   return result;
 }
 
-vector<int> split_string_to_ints(string input) {
+vector<string> split_string_to_strings(string input) {
   istringstream ss(input);
 
-  vector<int> data;
+  vector<string> data;
 
   while(ss) {
     string s;
     if(!getline(ss, s, ',')) {
       break;
     }
+    data.push_back(s);
+  }
+
+  return data;
+}
+
+
+vector<int> split_string_to_ints(string input) {
+  vector<string> strings = split_string_to_strings(input);
+
+  vector<int> data;
+
+  for(auto &s : strings) {
     data.push_back(stoi(s));
   }
 
