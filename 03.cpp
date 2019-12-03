@@ -46,10 +46,10 @@ unordered_map<Point, LineValue> put_wire(vector<string> wire) {
     char direction = command[0];
     int len = stoi(command.substr(1));
 
-    ++stepsTaken;
-
     // move in direction len spaces
     for(int i = 0;i < len;i++) {
+      ++stepsTaken;
+
       pos.x += delta[direction].x;
       pos.y += delta[direction].y;
       field.insert({pos, {stepsTaken}});
@@ -71,15 +71,20 @@ int main() {
 
   // Locate crossings
   int closest = numeric_limits<int>::max();
+  int fewest_steps = numeric_limits<int>::max();
 
   for(auto pos : first_field) {
     if(second_field.find(pos.first) != second_field.end()) {
-      // found intersection!
       int manhattan = abs(pos.first.x) + abs(pos.first.y);
       if(manhattan < closest) {
 	closest = manhattan;
       }
+      int steps = pos.second.steps + second_field[pos.first].steps;
+      if(steps < fewest_steps) {
+	fewest_steps = steps;
+      }
     }
   }
   cout << closest << endl;
+  cout << fewest_steps << endl;
 }
