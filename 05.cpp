@@ -34,6 +34,7 @@ instruction decode(int instr) {
 
 int run_program(vector<int> program) {
   int pc = 0;
+  int cycles = 0;
 
   while(program[pc]%100 != 99) {
     if(debug) {
@@ -43,7 +44,7 @@ int run_program(vector<int> program) {
     int op1 = instr.modes[0] == mode::immediate ? pc + 1 : program[pc + 1];
     int op2 = instr.modes[1] == mode::immediate ? pc + 2 : program[pc + 2];
     switch(instr.opcode) {
-    case 1:
+    case 1: // ADD
       if(debug) {
 	cout << "program[" << program[pc+3] << "] = "
 	  "program["<< op1 << "] + "
@@ -52,7 +53,7 @@ int run_program(vector<int> program) {
       program[program[pc+3]] = program[op1] + program[op2];
       pc += 4;
       break;
-    case 2:
+    case 2: // MUL
       if(debug) {
 	cout << "program[" << program[pc+3] << "] = "
 	  "program["<< op1 << "] * "
@@ -61,19 +62,53 @@ int run_program(vector<int> program) {
       program[program[pc+3]] = program[op1] * program[op2];
       pc += 4;
       break;
-    case 3:
-      // read integer from input
-      program[program[pc+1]] = 1;
+    case 3: // INPUT
+      // read integer from input (always position mode)
+      program[program[pc+1]] = 5; // puzzle says input should be '5' for part 2
       pc += 2;
       break;
-    case 4:
+    case 4: // OUTPUT
       // write integer to output (position or immediate mode)
       cout << "------------------------> " << program[op1] << endl;
       pc += 2;
       break;
+    case 5: // JMP if non-zero
+      if(program[op1] != 0) {
+	if(debug) {
+	  cout << "pc = program[" << op2 << "] (" << program[op2] << ")" << endl;
+	}
+	pc = program[op2];
+      } else {
+	pc += 3;
+      }
+      break;
+    case 6: // JMP if zero
+      if(program[op1] == 0) {
+	if(debug) {
+	  cout << "pc = program[" << op2 << "] (" << program[op2] << ")" << endl;
+	}
+	pc = program[op2];
+      } else {
+	pc += 3;
+      }
+      break;
+    case 7: // LESS THAN
+      program[program[pc+3]] = program[op1] < program[op2] ? 1 : 0;
+      pc += 4;
+      break;
+    case 8: // EQUALS
+      program[program[pc+3]] = program[op1] == program[op2] ? 1 : 0;
+      pc += 4;
+      break;
     default:
       throw 0;
       break;
+    }
+
+    // if it's a run-away program, abort
+    ++cycles;
+    if(cycles > 1000) {
+      throw 1;
     }
   }
 
