@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+#include <algorithm>
 
 #include "util.h"
 
@@ -30,6 +31,16 @@ public:
     return total;
   }
 
+  vector<object *> get_path_from(string obj_name) {
+    vector<object *> path;
+    auto obj = get(obj_name);
+    while(obj != nullptr) {
+      path.push_back(obj);
+      obj = obj->orbiting_around;
+    }
+    return path;
+  }
+
 private:
   unordered_map<string,object *> objects;
 
@@ -56,5 +67,24 @@ int main() {
     child->orbiting_around = parent;
   }
 
-  cout << objects.total_orbits() << endl;
+  vector<object *> YOU_path = objects.get_path_from("YOU");
+  vector<object *> SAN_path = objects.get_path_from("SAN");
+
+  // go through SAN_path and see if obj is in YOU_path
+  auto obj = SAN_path[1];
+  int steps = 0;
+  while(find(YOU_path.begin(), YOU_path.end(), obj) == YOU_path.end()) {
+    obj = obj->orbiting_around;
+    ++steps;
+  }
+
+  auto common_ancestor = obj;
+
+  obj = YOU_path[1];
+  while(obj != common_ancestor) {
+    obj = obj->orbiting_around;
+    ++steps;
+  }
+
+  cout << steps << endl;
 }
