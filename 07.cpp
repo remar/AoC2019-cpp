@@ -13,7 +13,14 @@ class pipe {
 public:
   string name;
 
+  bool input_ready() {
+    return !buffer.empty();
+  }
+
   int read() {
+    if(buffer.empty()) {
+      throw 0;
+    }
     int val = buffer.front();
     buffer.pop_front();
     return val;
@@ -23,7 +30,9 @@ public:
     buffer.push_back(val);
   }
 
-  void clear() {buffer = {};}
+  void clear() {
+    buffer = {};
+  }
 
   void print() {
     cout << "[" << name << "] ";
@@ -38,100 +47,114 @@ public:
   }
 private:
   deque<int> buffer;
+  deque<int> empty;
 };
 
 class Intcomputer {
 public:
   Intcomputer(pipe &input, pipe &output) : input{input}, output{output} {}
 
-  int run_program(vector<int> program) {
-    int pc = 0;
-    int cycles = 0;
+  void load_program(vector<int> program) {
+    this->program = program;
+    pc = 0;
+    cycles = 0;
+    halted = false;
+  }
 
-    while(program[pc]%100 != 99) {
+  bool is_halted() {return halted;}
+
+  void tick() {
+    if(debug_puter) {
+      cout << "[PC " << pc << "]" << endl;
+    }
+    auto instr = decode(program[pc]);
+    int op1 = instr.modes[0] == mode::immediate ? pc + 1 : program[pc + 1];
+    int op2 = instr.modes[1] == mode::immediate ? pc + 2 : program[pc + 2];
+    switch(instr.opcode) {
+    case 1: // ADD
       if(debug_puter) {
-	cout << "[PC " << pc << "]" << endl;
+	cout << "program[" << program[pc+3] << "] = "
+	  "program["<< op1 << "] + "
+	  "program[" << op2 << "]" << endl << flush;
       }
-      auto instr = decode(program[pc]);
-      int op1 = instr.modes[0] == mode::immediate ? pc + 1 : program[pc + 1];
-      int op2 = instr.modes[1] == mode::immediate ? pc + 2 : program[pc + 2];
-      switch(instr.opcode) {
-      case 1: // ADD
-	if(debug_puter) {
-	  cout << "program[" << program[pc+3] << "] = "
-	    "program["<< op1 << "] + "
-	    "program[" << op2 << "]" << endl << flush;
-	}
-	program[program[pc+3]] = program[op1] + program[op2];
-	pc += 4;
-	break;
-      case 2: // MUL
-	if(debug_puter) {
-	  cout << "program[" << program[pc+3] << "] = "
-	    "program["<< op1 << "] * "
-	    "program[" << op2 << "]" << endl << flush;
-	}
-	program[program[pc+3]] = program[op1] * program[op2];
-	pc += 4;
-	break;
-      case 3: // INPUT
-	// read integer from input (always position mode)
-	program[program[pc+1]] = input.read(); // puzzle says input should be '5' for part 2
+      program[program[pc+3]] = program[op1] + program[op2];
+      pc += 4;
+      break;
+    case 2: // MUL
+      if(debug_puter) {
+	cout << "program[" << program[pc+3] << "] = "
+	  "program["<< op1 << "] * "
+	  "program[" << op2 << "]" << endl << flush;
+      }
+      program[program[pc+3]] = program[op1] * program[op2];
+      pc += 4;
+      break;
+    case 3: // INPUT
+      // read integer from input (always position mode)
+      if(input.input_ready()) {
+	program[program[pc+1]] = input.read();
 	pc += 2;
-	break;
-      case 4: // OUTPUT
-	// write integer to output (position or immediate mode)
-	output.write(program[op1]);
+      }
+      // if no input is ready we simply keep the pc at its current
+      // position, which means we'll come here again
+      break;
+    case 4: // OUTPUT
+      // write integer to output (position or immediate mode)
+      output.write(program[op1]);
+      if(debug_puter) {
+	cout << "------------------------> " << program[op1] << endl;
+      }
+      pc += 2;
+      break;
+    case 5: // JMP if non-zero
+      if(program[op1] != 0) {
 	if(debug_puter) {
-	  cout << "------------------------> " << program[op1] << endl;
+	  cout << "pc = program[" << op2 << "] (" << program[op2] << ")" << endl;
 	}
-	pc += 2;
-	break;
-      case 5: // JMP if non-zero
-	if(program[op1] != 0) {
-	  if(debug_puter) {
-	    cout << "pc = program[" << op2 << "] (" << program[op2] << ")" << endl;
-	  }
-	  pc = program[op2];
-	} else {
-	  pc += 3;
-	}
-	break;
-      case 6: // JMP if zero
-	if(program[op1] == 0) {
-	  if(debug_puter) {
-	    cout << "pc = program[" << op2 << "] (" << program[op2] << ")" << endl;
-	  }
-	  pc = program[op2];
-	} else {
-	  pc += 3;
-	}
-	break;
-      case 7: // LESS THAN
-	program[program[pc+3]] = program[op1] < program[op2] ? 1 : 0;
-	pc += 4;
-	break;
-      case 8: // EQUALS
-	program[program[pc+3]] = program[op1] == program[op2] ? 1 : 0;
-	pc += 4;
-	break;
-      default:
-	throw 0;
-	break;
+	pc = program[op2];
+      } else {
+	pc += 3;
       }
-
-      // if it's a run-away program, abort
-      ++cycles;
-      if(cycles > 1000) {
-	throw 1;
+      break;
+    case 6: // JMP if zero
+      if(program[op1] == 0) {
+	if(debug_puter) {
+	  cout << "pc = program[" << op2 << "] (" << program[op2] << ")" << endl;
+	}
+	pc = program[op2];
+      } else {
+	pc += 3;
       }
+      break;
+    case 7: // LESS THAN
+      program[program[pc+3]] = program[op1] < program[op2] ? 1 : 0;
+      pc += 4;
+      break;
+    case 8: // EQUALS
+      program[program[pc+3]] = program[op1] == program[op2] ? 1 : 0;
+      pc += 4;
+      break;
+    case 99: // HALT
+      halted = true;
+      break;
+    default:
+      throw 0;
+      break;
     }
 
-    return program[0];
+    // if it's a run-away program, abort
+    ++cycles;
+    if(cycles > 10000) {
+      throw 1;
+    }
   }
 
 private:
+  vector<int> program;
   pipe &input, &output;
+  int pc;
+  int cycles;
+  bool halted;
 
   enum class mode {
     position,
@@ -184,6 +207,16 @@ void print_pipes() {
   }
 }
 
+int puters_still_running(Intcomputer *puters) {
+  int running = 0;
+  for(int i = 0;i < 5;i++) {
+    if(!puters[i].is_halted()) {
+      running++;
+    }
+  }
+  return running;
+}
+
 int main() {
   auto lines = read_file("07.txt");
 
@@ -194,7 +227,7 @@ int main() {
     {pipes[1], pipes[2]},
     {pipes[2], pipes[3]},
     {pipes[3], pipes[4]},
-    {pipes[4], pipes[5]},
+    {pipes[4], pipes[0]},
   };
 
   for(int i = 0;i < 6;i++) {
@@ -204,14 +237,18 @@ int main() {
   int max = 0;
 
   // all permutations of phase settings
-  int phase_setting[] {0, 1, 2, 3, 4};
+  int phase_setting[] {5, 6, 7, 8, 9};
   do {
     reset_pipes(phase_setting);
     for(auto &puter : puters) {
-      puter.run_program(program);
+      puter.load_program(program);
     }
-
-    int output = pipes[5].read();
+    while(puters_still_running(puters) > 0) {
+      for(auto &puter : puters) {
+	puter.tick();
+      }
+    }
+    int output = pipes[0].read();
     if(output > max) {
       max = output;
       cout << max << endl;
