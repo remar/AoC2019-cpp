@@ -74,7 +74,7 @@ vector<point> reachable_from(point from) {
 }
 
 int main() {
-  auto lines = read_file("10_5.txt");
+  auto lines = read_file("10.txt");
 
   for(int y = 0;y < lines.size();y++) {
     auto &line = lines[y];
@@ -107,6 +107,27 @@ int main() {
     }
   }
 
+  vector<point> lower_right;
+  for(auto r : reachable_from_best) {
+    if(r.x > best.x && r.y >= best.y) {
+      lower_right.push_back(r);
+    }
+  }
+
+  vector<point> lower_left;
+  for(auto r : reachable_from_best) {
+    if(r.x <= best.x && r.y > best.y) {
+      lower_left.push_back(r);
+    }
+  }
+
+  vector<point> upper_left;
+  for(auto r : reachable_from_best) {
+    if(r.x < best.x && r.y <= best.y) {
+      upper_left.push_back(r);
+    }
+  }
+
   for(auto r : upper_right) {
     cout << r.x << "," << r.y << ":";
   }
@@ -114,12 +135,49 @@ int main() {
 
   sort(upper_right.begin(), upper_right.end(),
        [&](const point &a, const point &b) {
-	 float a_diff = ((float)(a.x - best.x))/((float)(best.y - a.y));
-	 float b_diff = ((float)(b.x - best.x))/((float)(best.y - b.y));
+	 float a_diff = ((float)(abs(a.x - best.x)))
+	   /((float)(abs(a.y - best.y)));
+	 float b_diff = ((float)(abs(b.x - best.x)))
+	   /((float)(abs(b.y - best.y)));
 	 return a_diff < b_diff;
        });
-  for(auto r : upper_right) {
-    cout << r.x << "," << r.y << ":";
+  sort(lower_right.begin(), lower_right.end(),
+       [&](const point &a, const point &b) {
+	 float a_diff = ((float)(abs(a.y - best.y)))/((float)(abs(a.x - best.x)));
+	 float b_diff = ((float)(abs(b.y - best.y)))/((float)(abs(b.x - best.x)));
+	 return a_diff < b_diff;
+       });
+  sort(lower_left.begin(), lower_left.end(),
+       [&](const point &a, const point &b) {
+	 float a_diff = ((float)(abs(a.x - best.x)))
+	   /((float)(abs(a.y - best.y)));
+	 float b_diff = ((float)(abs(b.x - best.x)))
+	   /((float)(abs(b.y - best.y)));
+	 return a_diff < b_diff;
+       });
+  sort(upper_left.begin(), upper_left.end(),
+       [&](const point &a, const point &b) {
+	 float a_diff = ((float)(abs(a.y - best.y)))/((float)(abs(a.x - best.x)));
+	 float b_diff = ((float)(abs(b.y - best.y)))/((float)(abs(b.x - best.x)));
+	 return a_diff < b_diff;
+       });
+
+  int j;
+  for(int i = 0;i < upper_right.size();i++) {
+    cout << i+1 << ": " << upper_right[i].x << "," << upper_right[i].y << endl;
+    j = i;
   }
-  cout << endl;
+  int k;
+  for(int i = 0;i < lower_right.size();i++) {
+    cout << i+j+2 << ": " << lower_right[i].x << "," << lower_right[i].y << endl;
+    k = i;
+  }
+  int l;
+  for(int i = 0;i < lower_left.size();i++) {
+    cout << i+j+k+3 << ": " << lower_left[i].x << "," << lower_left[i].y << endl;
+    l = i;
+  }
+  for(int i = 0;i < upper_left.size();i++) {
+    cout << i+j+k+l+4 << ": " << upper_left[i].x << "," << upper_left[i].y << endl;
+  }
 }
