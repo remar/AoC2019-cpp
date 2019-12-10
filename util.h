@@ -50,4 +50,16 @@ vector<int> split_string_to_ints(string input) {
   return data;
 }
 
+vector<long long int> split_string_to_long_longs(string input) {
+  vector<string> strings = split_string_to_strings(input);
+
+  vector<long long int> data;
+
+  for(auto &s : strings) {
+    data.push_back(stoll(s));
+  }
+
+  return data;
+}
+
 #endif
