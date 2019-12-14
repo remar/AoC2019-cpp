@@ -1,6 +1,8 @@
 #include <deque>
 #include <iostream>
 
+#include "util.h"
+
 using namespace std;
 
 class pipe {
@@ -8,6 +10,9 @@ public:
   string name;
 
   bool input_ready() {
+    if(instrumentation) {
+      return true;
+    }
     return !buffer.empty();
   }
 
@@ -16,7 +21,12 @@ public:
   }
 
   long long int read() {
+    if(instrumentation) {
+      return value;
+    }
+
     if(buffer.empty()) {
+      cout << name << " BUFFER EMPTY!" << endl;
       throw 0;
     }
     long long int val = buffer.front();
@@ -43,9 +53,16 @@ public:
     }
     cout << endl;
   }
+
+  void set_instrumentation(long long int value) {
+    this->value = value;
+    instrumentation = true;
+  }
 private:
   deque<long long int> buffer;
   deque<long long int> empty;
+  bool instrumentation = false;
+  long long int value;
 };
 
 class Intcomputer {
@@ -59,6 +76,15 @@ public:
     cycles = 0;
     halted = false;
     index = 0;
+  }
+
+  void load_program_from_file(string path) {
+    auto lines = read_file(path);
+    load_program(split_string_to_long_longs(lines[0]));
+  }
+
+  void write_value(int address, long long value) {
+    program[address] = value;
   }
 
   bool is_halted() {return halted;}
@@ -159,7 +185,7 @@ public:
 
     // if it's a run-away program, abort
     ++cycles;
-    if(cycles > 10000000) {
+    if(cycles > 1000000000) {
       cout << "Runaway program!" << endl << flush;
       throw 1;
     }
