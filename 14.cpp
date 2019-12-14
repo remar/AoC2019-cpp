@@ -23,7 +23,7 @@ public:
     }
   }
 
-  int amount;
+  long long int amount;
   string name;
 };
 
@@ -64,7 +64,10 @@ class factory;
 
 map<string, factory*> factories;
 
-int total_ore = 0;
+long long int total_ore = 0;
+
+long long int ore = 1000000000000;
+long long int fuel_created = 0;
 
 class factory {
 public:
@@ -96,38 +99,37 @@ public:
     }
   }
 
-  void produce() {
-    // cout << name << " produce! request_to_produce?: "
-    // 	 << (request_to_produce ? "true" : "false") << endl;
-    if(request_to_produce) {
-      request_to_produce = false;
+  // produce 'amount' number of this element
+  long long int produce(long long int amount = 0) {
+    // call each subsequent factory to be able to produce 'amount' of
+    // this element
+    long long int times = ((amount-stock) / prod.result.amount) + ((amount-stock) % prod.result.amount == 0 ? 0 : 1);
 
-      if(prod.ingredients.size() == 1 && prod.ingredients[0].name == "ORE") {
-	// cout << "Produce ORE!!" << endl;
-	stock += prod.result.amount;
-	total_ore += prod.ingredients[0].amount;
-      } else {
-	for(auto &ingr : prod.ingredients) {
-	  int need = needed[ingr.name] - internal_stock[ingr.name];
-	  if(need > 0) {
-	    internal_stock[ingr.name] += factories[ingr.name]->request(need);
-	  }
-	}
-	bool has_enough_stock = true;
-	for(auto &ingr : prod.ingredients) {
-	  if(internal_stock[ingr.name] < needed[ingr.name]) {
-	    has_enough_stock = false;
-	    break;
-	  }
-	}
-	if(has_enough_stock) {
-	  for(auto &ingr : prod.ingredients) {
-	    internal_stock[ingr.name] -= needed[ingr.name];
-	  }
-	  stock += prod.result.amount;
+    if(is_ore_factory()) {
+      if(stock > amount) {
+	stock -= amount;
+	return amount;
+      }
+      total_ore += prod.ingredients[0].amount * times;
+      stock += prod.result.amount * times - amount;
+      return amount;
+    } else {
+      for(auto &ingr : prod.ingredients) {
+	long long int need = needed[ingr.name] * times - internal_stock[ingr.name];
+	if(need > 0) {
+	  internal_stock[ingr.name] += factories[ingr.name]->produce(need);
 	}
       }
+      for(auto &ingr : prod.ingredients) {
+	internal_stock[ingr.name] -= needed[ingr.name] * times;
+      }
+      stock += (prod.result.amount * times - amount);
+      return amount;
     }
+  }
+
+  bool is_ore_factory() {
+    return prod.ingredients.size() == 1 && prod.ingredients[0].name == "ORE";
   }
 
   void print() {
@@ -137,6 +139,11 @@ public:
     }
     cout << "=> " << prod.result.amount << " (" << stock << ") " << prod.result.name << endl;
   }
+
+  int peek_stock() {
+    return stock;
+  }
+
 private:
   string name;
   recipe prod;
@@ -157,20 +164,13 @@ int main() {
     recipe r {l};
     factory *f = new factory(r);
     factories[f->get_name()] = f;
-    f->print();
     if(f->get_name() == "FUEL") {
       fuel_factory = f;
     }
   }
 
-  fuel_factory->request(1);
+  fuel_factory->produce(3279311);
 
-  while(fuel_factory->request(1) < 1) {
-    for(auto f : factories) {
-      f.second->produce();
-      // f.second->print();
-    }
-  }
-
-  cout << "total ore: " << total_ore << endl;
+  cout << "total_ore: " << total_ore << endl;
+  cout << "total_ore: " << 1000000000000 << endl;
 }
