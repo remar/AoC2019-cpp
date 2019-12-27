@@ -1,20 +1,7 @@
 #include "Robot.h"
 #include "Cats.h"
-#include <map>
 
 using namespace std;
-
-struct point {
-  int x, y;
-};
-
-map<int,point> dir_map = {
-  {0, {0, 0}},
-  {1, {0, -1}},
-  {2, {0, +1}},
-  {3, {-1, 0}},
-  {4, {+1, 0}},
-};
 
 Robot::Robot() : puter {input, output} {
   input.name = "input";
@@ -23,34 +10,28 @@ Robot::Robot() : puter {input, output} {
 }
 
 
-vector<bool> Robot::check_directions() {
-  int move_back[] = {0, 2, 1, 4, 3};
-  vector<bool> openings {false};
+vector<Robot::MoveResult> Robot::check_directions() {
+  vector<Robot::MoveResult> moveResults {Robot::MoveResult::Unknown};
   // go in each direction, checking for openings
   for(int i = 1;i <= 4;i++) {
-    bool opening = (move(i) != 0);
-    if(opening) {
+    moveResults.push_back(move(i));
+    if(moveResults.back() != Robot::MoveResult::Wall) {
       // Move back!
-      move(move_back[i]);
+      reverse(i);
     }
-    openings.push_back(opening);
   }
-  return openings;
+  return moveResults;
 }
 
-int Robot::move(int direction) {
+Robot::MoveResult Robot::move(int direction) {
   input.write(direction);
   while(!output.input_ready()) {
     puter.tick();
   }
-  return output.read();
+  return Robot::MoveResult(output.read());
 }
 
-
-void Robot::draw_surroundings(int x, int y) {
-  auto directions = check_directions();
-  for(int i = 1;i <= 4;i++) {
-    Cats::SetTile(x + dir_map[i].x, y + dir_map[i].y, "tiles", directions[i] ? 0 : 1, 0);
-  }
-  Cats::SetTile(x, y, "tiles", 4, 0);
+Robot::MoveResult Robot::reverse(int direction) {
+  int move_back[] = {0, 2, 1, 4, 3};
+  return move(move_back[direction]);
 }

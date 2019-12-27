@@ -6,9 +6,11 @@
 class Robot {
 public:
   Robot();
-  vector<bool> check_directions();
-  int move(int direction);
-  void draw_surroundings(int x, int y);
+
+  enum class MoveResult {Wall, Open, Goal, Unknown};
+  MoveResult move(int direction);
+  MoveResult reverse(int direction);
+  vector<MoveResult> check_directions();
 
 private:
   Pipe input, output;
