@@ -1,112 +1,62 @@
 #include <iostream>
 #include <SDL2/SDL.h>
 #include <map>
-
-#include "../Intcomputer.h"
-
+#include <queue>
+#include <list>
+#include "Input.h"
+#include "Robot.h"
 #include "Cats.h"
 
 using namespace std;
 
 bool quitEvent = false;
 
-pipe input;
-
-int direction;
-
-struct point {
-  int x, y;
-};
-
-struct visited {
-  visited *parent;
-  point p;
-};
-
-map<int,point> dir_map = {
-  {0, {0, 0}},
-  {1, {0, -1}},
-  {2, {0, +1}},
-  {3, {-1, 0}},
-  {4, {+1, 0}},
-};
-
-void checkForInput() {
-  SDL_Event event;
-
-  while(SDL_PollEvent(&event)) {
-    if(event.type == SDL_QUIT) {
-      quitEvent = true;
-    } else if(event.type == SDL_KEYDOWN && event.key.repeat == 0) {
-      switch(event.key.keysym.sym) {
-      case SDLK_UP:
-	direction = 1;
-	break;
-
-      case SDLK_DOWN:
-	direction = 2;
-	break;
-
-      case SDLK_LEFT:
-	direction = 3;
-	break;
-
-      case SDLK_RIGHT:
-	direction = 4;
-	break;
-      }
-      input.write(direction);
-    }
-  }
-}
 
 int main() {
-  pipe output;
-  input.name = "input";
-  output.name = "output";
-  Intcomputer puter(input, output);
-  puter.load_program_from_file("15.txt");
+  Robot robot;
 
-  constexpr int width = 50;
-  constexpr int height = 30;
-  Cats::Init(width*16, height*16);
+  constexpr int width = 200;
+  constexpr int height = 120;
+  constexpr int tileWidth = 4;
+  constexpr int tileHeight = 4;
+  Cats::Init(width*tileWidth, height*tileHeight, 1.5f);
 
   Cats::LoadTileset("tiles.json");
-  Cats::SetupTileLayer(width, height, 16, 16);
+  Cats::SetupTileLayer(width, height, tileWidth, tileHeight);
 
   int lastFrameTime = SDL_GetTicks();
 
-  // input.set_instrumentation(0);
   int x = width/2;
   int y = height/2;
 
   Cats::SetTile(x, y, "tiles", 4, 0);
 
-  while(!quitEvent) {
-    checkForInput();
+  robot.draw_surroundings(x, y);
 
-    // run some iterations of the puter here
-    // collect output, provide input when needed
-    for(int i = 0;i < 10;i++) {
-      puter.tick();
-    }
+  while(!Input::instance.gotQuitEvent()) {
+    // checkForInput();
+    Input::instance.update();
 
-    if(output.input_ready()) {
-      int res = output.read();
-      if(res == 0) {
-	// Wall
-	auto d = dir_map[direction];
-	cout << "put wall tile at " << (x + d.x) << "," << (y + d.y) << endl;
-	Cats::SetTile(x + d.x, y + d.y, "tiles", 1, 0);
-      } else if(res == 1) {
-	// Move to new spot, draw ball there, and draw white square
-	// where ball was
-	Cats::SetTile(x, y, "tiles", 0, 0);
-	x += dir_map[direction].x;
-	y += dir_map[direction].y;
-	Cats::SetTile(x, y, "tiles", 4, 0);
+    if(Input::instance.pressed(SDLK_LEFT)) {
+      if(robot.move(3) != 0) {
+	x -= 1;
+	robot.draw_surroundings(x, y);
       }
-      cout << "res: " << res << endl;
+    } else if(Input::instance.pressed(SDLK_RIGHT)) {
+      if(robot.move(4) != 0) {
+	x += 1;
+	robot.draw_surroundings(x, y);
+      }
+    } else if(Input::instance.pressed(SDLK_UP)) {
+      if(robot.move(1) != 0) {
+	y -= 1;
+	robot.draw_surroundings(x, y);
+      }
+    } else if(Input::instance.pressed(SDLK_DOWN)) {
+      if(robot.move(2) != 0) {
+	y += 1;
+	robot.draw_surroundings(x, y);
+      }
     }
 
     float delta = (SDL_GetTicks() - lastFrameTime) / 1000.0f;
